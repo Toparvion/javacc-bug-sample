@@ -1,0 +1,354 @@
+options {
+  STATIC=false;
+  MULTI=true;
+  VISITOR=true;
+  NODE_DEFAULT_VOID=true;
+  UNICODE_INPUT=true;
+  TRACK_TOKENS=true;
+}
+
+PARSER_BEGIN(ExpressionParser)
+
+package pro.toparvion.sample.javacc;
+
+public class ExpressionParser { }
+
+PARSER_END(ExpressionParser)
+
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+| <"/*" (~["*"])* "*" (~["/"] (~["*"])* "*")* "/">
+}
+
+MORE :
+{
+  "//" : IN_SINGLE_LINE_COMMENT
+|
+  "/*" : IN_MULTI_LINE_COMMENT
+}
+
+<IN_SINGLE_LINE_COMMENT>
+SPECIAL_TOKEN : { <SINGLE_LINE_COMMENT:  (~["\r","\n","\u001a"])* ("\r"|"\n"|"\r\n")? > : DEFAULT }
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <MULTI_LINE_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_SINGLE_LINE_COMMENT,IN_MULTI_LINE_COMMENT>
+MORE :
+{
+  < ~[] >
+}
+
+
+TOKEN [IGNORE_CASE] :
+{
+  < OR: "||" >
+|
+  < AND: "&&" >
+|
+  < NOT: "!" >
+|
+  < BITWISE_OR: "|" >
+|
+  < BITWISE_XOR: "^" >
+|
+  < BITWISE_AND: "&" >
+|
+  < BITWISE_NOT: "~" >
+|
+  < TRUE: "TRUE" >
+|
+  < FALSE: "FALSE" >
+|
+  < NULL: "NULL" >
+}
+
+TOKEN : /* LITERALS */
+{
+  < INTEGER_LITERAL:
+        <DECIMAL_LITERAL>
+      | <HEX_LITERAL>
+      | <OCTAL_LITERAL>
+      | <BINARY_LITERAL>
+  >
+|
+  < #HEX_LITERAL: "0" ["x","X"] (["0"-"9","a"-"f","A"-"F"])+ >
+|
+  < #DECIMAL_LITERAL: ["1"-"9"] (["0"-"9"])* >
+|
+  < #OCTAL_LITERAL: "0" (["0"-"7"])* >
+|
+  < #BINARY_LITERAL: "0" ["b","B"] (["0"-"1"])+ >
+|
+  < FLOATING_POINT_LITERAL:
+      (["0"-"9"])+ "." (["0"-"9"])* (<EXPONENT>)? (["f","F","d","D"])?
+      | "." (["0"-"9"])+ (<EXPONENT>)? (["f","F","d","D"])?
+      | (["0"-"9"])+ <EXPONENT> (["f","F","d","D"])?
+      | (["0"-"9"])+ (<EXPONENT>)? ["f","F","d","D"]
+  >
+|
+  < #EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
+|
+  < STRING_LITERAL:
+      (
+      "\""
+      (   
+        (~["\"","\\","\n","\r","\t","\f","\b"])
+        | ("\\" ( ["\\","'","\"","n","r","t","f","b"]) )
+        | ("\\" "u" (["0"-"9","a"-"f","A"-"F"]){4} )
+      )*
+      "\""
+      ) | (
+      "'"
+      (
+        (~["'","\\","\n","\r","\t","\f","\b"])
+        | ("\\" ( ["\\","'","\"","n","r","t","f","b"]) )
+        | ("\\" "u" (["0"-"9","a"-"f","A"-"F"]){4} )
+      )*
+      "'"
+      )
+  >
+}
+
+TOKEN : /* OPERATORS */
+{
+  < PLUS: "+">
+|
+  < MINUS: "-">
+|
+  < MUL: "*">
+|
+  < DIV: "/">
+|
+  < MOD: "%">
+|
+  < QUESTION: "?">
+|
+  < COLON: ":">
+|
+  < COMMA: ",">
+|
+  < EQ: "==">
+|
+  < NE: "!=">
+|
+  < MATCH: "~=">
+|
+  < LT: "<">
+|
+  < GT: ">">
+|
+  < LTE: "<=">
+|
+  < GTE: ">=">
+|
+  < LBRAKET: "(">
+|
+  < RBRAKET: ")">
+|
+  < LBRACE: "{">
+|
+  < RBRACE: "}" >
+|
+  < RIGHT_SHIFT: ">>" >
+|
+  < URIGHT_SHIFT: ">>>" >
+|
+  < LEFT_SHIFT: "<<" >
+}
+
+TOKEN : /* IDENTIFIERS */
+{
+  < IDENTIFIER: <LETTER> (<LETTER>|<DIGIT>)* >
+|
+  < URICHAR: <LETTER> | <DIGIT> | ["/","\\","%","?",":","@","=","#","&","+","$",",","-",".","!","~","*","'","(",")","[","]","}"]>
+|
+  < #LETTER: ["_","a"-"z","A"-"Z"] >
+|
+  < #DIGIT: ["0"-"9"] >
+}
+
+ASTStart Start() #Start : {}
+{
+  Expression() ";"
+  { return jjtThis; }
+}
+
+void Expression() : {}
+{
+  ConditionalExpression()
+}
+
+void ConditionalExpression() : {}
+{
+  LogicalOrExpression() ( <QUESTION> LogicalOrExpression() <COLON> ConditionalExpression() #ConditionalNode(3) )?
+}
+
+void LogicalOrExpression() : {}
+{
+  LogicalAndExpression() ( <OR> LogicalAndExpression() #LogicalOrNode(2) )*
+}
+
+void LogicalAndExpression() : {}
+{
+  BitwiseOrExpression() ( <AND> BitwiseOrExpression()  #LogicalAndNode(2) )*
+}
+
+void BitwiseOrExpression() : {}
+{
+  BitwiseXorExpression() ( <BITWISE_OR> BitwiseXorExpression() #BitwiseOrNode(2) )*
+}
+
+void BitwiseXorExpression() : {}
+{
+  BitwiseAndExpression() ( <BITWISE_XOR> BitwiseAndExpression() #BitwiseXorNode(2) )*
+}
+
+void BitwiseAndExpression() : {}
+{
+  EqualityExpression() ( <BITWISE_AND> EqualityExpression() #BitwiseAndNode(2) )*
+}
+
+void EqualityExpression() #void :
+{}
+{
+  RelationalExpression()
+  (
+     <EQ> RelationalExpression() #EQNode(2)
+   |
+     <NE> RelationalExpression() #NENode(2)
+   |
+     <MATCH> RelationalExpression() #RegexMatchNode(2)
+  )*
+}
+void RelationalExpression() #void :
+{}
+{
+  ShiftExpression()
+  (
+    <LT> ShiftExpression() #LTNode(2)
+   |
+    <GT> ShiftExpression() #GTNode(2)
+   |
+    <LTE> ShiftExpression() #LENode(2)
+   |
+    <GTE> ShiftExpression() #GENode(2)
+  )*
+}
+
+void ShiftExpression() #void :
+{}
+{
+  AdditiveExpression()
+  (
+    <RIGHT_SHIFT> AdditiveExpression() #RightShiftNode(2)
+   |
+    <URIGHT_SHIFT> AdditiveExpression() #UnsignedRightShiftNode(2)
+   |
+    <LEFT_SHIFT> AdditiveExpression() #LeftShiftNode(2)
+  )*
+}
+
+void AdditiveExpression() #void :
+{}
+{
+  MultiplicativeExpression()
+  (
+    <PLUS> MultiplicativeExpression() #AddNode(2)
+   |
+    <MINUS> MultiplicativeExpression() #SubtractNode(2)
+  )*
+}
+
+void MultiplicativeExpression() #void :
+{}
+{
+  UnaryExpression()
+  (
+    <MUL> UnaryExpression() #MulNode(2)
+   |
+    <DIV> UnaryExpression() #DivNode(2)
+   |
+    <MOD> UnaryExpression() #ModNode(2)
+  )*
+}
+
+void UnaryExpression() : {}
+{
+  <MINUS> LogicalNotExpression() #UnaryNode(1)
+  |
+  LogicalNotExpression()
+}
+
+void LogicalNotExpression() : {}
+{
+  <NOT> LogicalNotExpression() #LogicalNotNode(1)
+  |
+  BitwiseNotExpression()
+}
+
+void BitwiseNotExpression() : {}
+{
+  <BITWISE_NOT> BitwiseNotExpression() #BitwiseNotNode(1)
+  |
+  PrimaryExpression()
+}
+
+void PrimaryExpression() #void :
+{ }
+{
+  Literal()
+  |
+  Function()
+  |
+  <LBRAKET> Expression() <RBRAKET>
+}
+
+
+void Function() #FunctionNode :
+{}
+{
+  <IDENTIFIER> Arguments()
+}
+
+void Arguments() #void :
+{}
+{
+  <LBRAKET> [ ArgumentList() ] <RBRAKET>
+}
+
+void ArgumentList() #void :
+{}
+{
+  Expression() ( <COMMA> Expression() )*
+}
+
+void Literal() #void :
+{ }
+{
+ ( <INTEGER_LITERAL> ) #LongConstNode
+ |
+ ( <FLOATING_POINT_LITERAL> ) #FloatConstNode
+ | 
+ ( <STRING_LITERAL> ) #StringConstNode
+ |
+ BooleanLiteral()
+ |
+ ( <NULL> ) #NullNode
+}
+
+void BooleanLiteral() #void :
+{}
+{
+  <TRUE> #TrueNode
+|
+  <FALSE> #FalseNode
+}
+
