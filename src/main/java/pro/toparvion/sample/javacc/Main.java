@@ -8,7 +8,9 @@ import java.io.StringReader;
 public class Main {
     
     public static void main(String[] args) {
-        var input = args.length > 0 ? args[0] : "1+2;";
+        var input = args.length > 0 
+                ? args[0] 
+                : "1 + 2 - 3;";
         System.out.println("Expression: " + input);
         System.out.println();
 

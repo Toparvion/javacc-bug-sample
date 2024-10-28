@@ -37,14 +37,12 @@
     <build>
         <plugins>
             <plugin>
-<!--
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>javacc-maven-plugin</artifactId>
                 <version>3.0.1</version>
--->
-                <groupId>io.github.tulipcc</groupId>
-                <artifactId>tulipcc-maven-plugin</artifactId>
-                <version>5.0.0</version>
+<!--                <groupId>io.github.tulipcc</groupId>-->
+<!--                <artifactId>tulipcc-maven-plugin</artifactId>-->
+<!--                <version>5.0.0</version>-->
                 <executions>
                     <execution>
                         <id>jjtree-javacc</id>

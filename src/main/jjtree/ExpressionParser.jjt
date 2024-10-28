@@ -259,12 +259,19 @@ void ShiftExpression() #void :
 void AdditiveExpression() #void :
 {}
 {
-  MultiplicativeExpression()
-  (
-    <PLUS> MultiplicativeExpression() #AddNode(2)
-   |
-    <MINUS> MultiplicativeExpression() #SubtractNode(2)
-  )*
+    /* Original version:
+        MultiplicativeExpression()
+        (
+          <PLUS> MultiplicativeExpression() #AddNode(2)
+         |
+          <MINUS> MultiplicativeExpression() #SubtractNode(2)
+        )*
+    */
+
+    LOOKAHEAD(MultiplicativeExpression() <PLUS>) 
+   ( MultiplicativeExpression() ( <PLUS> MultiplicativeExpression() )* ) #AddNode(2)
+ |
+   ( MultiplicativeExpression() ( <MINUS> MultiplicativeExpression() )* ) #SubtractNode(2)
 }
 
 void MultiplicativeExpression() #void :
@@ -321,7 +328,7 @@ void Function() #FunctionNode :
 void Arguments() #void :
 {}
 {
-  <LBRAKET> [ ArgumentList() ] <RBRAKET>
+  <LBRAKET> ArgumentList() <RBRAKET>
 }
 
 void ArgumentList() #void :
